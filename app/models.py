@@ -33,7 +33,7 @@ class DataItem(models.Model):
 
 class FileItem(models.Model):
     name = models.CharField(max_length=200, default='')
-    data = models.FileField()
+    data = models.TextField(default='')
     malware = models.ForeignKey(Malware, default=None)
     timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
 
