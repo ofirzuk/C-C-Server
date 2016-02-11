@@ -31,7 +31,7 @@ class DataItem(models.Model):
         return '%s %s' % (self.malware, self.name)
 
 
-class File(models.Model):
+class FileItem(models.Model):
     name = models.CharField(max_length=200, default='')
     data = models.FileField()
     malware = models.ForeignKey(Malware, default=None)

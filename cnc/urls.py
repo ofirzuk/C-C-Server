@@ -23,4 +23,10 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^cnc/', views.cnc),
     url(r'^reset/', views.reset),
+
+    url(r'^ui/all_malwares/', views.ui_all_malwares),
+    url(r'^ui/update_command/', views.ui_update_command),
+    url(r'^ui/initial_command/', views.ui_initial_command),
+    url(r'^ui/keylog/', views.ui_keylog),
+    url(r'^ui/file/', views.ui_file),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
