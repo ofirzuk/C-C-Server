@@ -3,10 +3,11 @@ from django.db import models
 
 
 class Malware(models.Model):
-    token = models.CharField(max_length=120)
+    token = models.CharField(max_length=120, default='')
+    teammates = models.CharField(max_length=120, default='')
 
     def __unicode__(self):
-        return self.token
+        return self.teammates
 
 
 class Command(models.Model):
@@ -16,10 +17,10 @@ class Command(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     def __unicode__(self):
-        return self.type
+        return '%s %s' % (self.malware, self.type)
 
 
-class Data(models.Model):
+class DataItem(models.Model):
     name = models.CharField(max_length=200, default='')
     data = models.TextField(default='')
     data_chunks_sent = models.IntegerField(default=1)
@@ -27,17 +28,16 @@ class Data(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     def __unicode__(self):
-        return '%s %s' % (self.name, self.malware)
+        return '%s %s' % (self.malware, self.name)
 
 
 class File(models.Model):
     name = models.CharField(max_length=200, default='')
-    data = models.TextField(default='')
-    data_chunks_sent = models.IntegerField(default=1)
+    data = models.FileField()
     malware = models.ForeignKey(Malware, default=None)
     timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
 
     def __unicode__(self):
-        return self.name
+        return '%s %s' % (self.malware, self.name)
 
 
